@@ -1,8 +1,7 @@
 import inspect
-import openai
-from openai import OpenAI
+import req
 
-client = OpenAI(api_key="",base_url="http://127.0.0.1:5000/v1")
+AI = req.AI()
 
 add_propmpt = "What is the value of the sum of the numbers 3 then 4"
 subtract_propmpt = "What is the value of the substraction of the numbers 3 then 4"
@@ -52,7 +51,6 @@ class Functions:
         full_prompt=f"Given the following list of functions, please select the one that is best suited to fullfill the request '{prompt}':  {', '.join(self.fn.keys())} "
         result = ""
         while result not in self.fn:
-            response = client.chat.completions.create(model="llama",
             messages=[
                 {"role": "system", "content": "You are an assistant that can only answer ONE word"},
                 {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'How much is 5 plus 7': addition, subtraction, time"},
@@ -61,13 +59,12 @@ class Functions:
                 {"role": "assistant", "content": f"subtraction{self.end}"},
                 {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'What time it is?': addition, subtraction, time"},
                 {"role": "assistant", "content": f"time{self.end}"},
-                {"role": "user", "content": full_prompt},
-            ],
-            max_tokens=8,
-            )
+                {"role": "user", "content": full_prompt}
+                ]
+            response = AI.chat_complete(messages,8)
             print(response)
             print(self.fn)
-            answer_first:str = response.choices[0].message.content.lower().replace(" ","") #To lower???
+            answer_first:str = response.lower().replace(" ","") #To lower???
             result = answer_first.split("\n")[0]
             print(result)
         
@@ -97,10 +94,8 @@ class Functions:
                 if hasattr(instance, "examples"):
                     messages=messages[:-2] + instance.examples + messages[-2:]
                 while True:
-                    response = client.chat.completions.create(model="llama",
-                    messages=messages,
-                    max_tokens=20)
-                    answer :str = response.choices[0].message.content.lower().replace(" ","").split("\n")[0]
+                    response = AI.chat_complete(messages,20)
+                    answer :str = response.lower().replace(" ","").split("\n")[0]
                     print("ANSWER:"+answer)
                     args = answer.split(",")
                     args_correct = []
@@ -127,7 +122,6 @@ class Functions:
                 print(full_prompt)
                 print("########################")
                 while True:
-                    response = client.chat.completions.create(model="llama",
                     messages=[
                         {"role": "system", "content": "Given a request to execute a function with a specified signature, provide the correct arguments to fulfill the request"},
                         {"role": "user", "content": "Given the request 'What is the value of the sum of the numbers 5 then 7' and the function 'addition' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
@@ -135,9 +129,9 @@ class Functions:
                         {"role": "user", "content": "Given the request 'How much is 14 minus 9' and the function 'substraction' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
                         {"role": "assistant", "content": f"14,9{self.end}"},
                         {"role": "user", "content": full_prompt},
-                    ],
-                    max_tokens=20)
-                    answer :str = response.choices[0].message.content.lower().replace(" ","").split("\n")[0]
+                    ]
+                    response = AI.chat_complete(messages,20)
+                    answer :str = response.lower().replace(" ","").split("\n")[0]
                     print("ANSWER:"+answer)
                     args = answer.split(",")
                     args_correct = []
