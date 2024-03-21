@@ -9,7 +9,7 @@ class AI:
         pass
     def chat_complete(self,messages:list[dict[str,str]], max_tokens:int,model:str="Llama", mode:str|None = None )->str:
         if mode == None or mode not in ["chat","instruct"]:
-            mode = "instruct"
+            mode = "chat"
         url  = self.base_url+"/chat/completions"
         data = {
             "model":model,

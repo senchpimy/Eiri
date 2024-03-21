@@ -14,7 +14,7 @@ def addition(x:int, y:int) -> int:
 def subtraction(x:int, y:int)->int:
     return x - y
 
-def time()->str:
+def get_current_time()->str:
     return "Time now"
 
 class Timer:
@@ -38,11 +38,12 @@ class Functions:
     def __init__(self,end = None) -> None:
         self.fn= {}
         self.end = "\n" if end is None else end
-        # TODO: The 'openai.api_base' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(base_url="http://127.0.0.1:5000/v1")'
-        # openai.api_base = "http://127.0.0.1:5000/v1"
 
     def count_arguments(self,func):
         return inspect.signature(func).parameters
+    
+    def avaible_functions(self)->list[str]:
+        return list(self.fn.keys())
 
     def add(self, cl):
         self.fn[cl.__name__.lower()] = cl #To lower???
@@ -147,12 +148,72 @@ class Functions:
             else: return func()
 
 f = Functions()
-f.add(addition)
-f.add(subtraction)
-f.add(time)
+#f.add(addition)
+#f.add(subtraction)
+f.add(get_current_time)
 f.add(Timer)
 
-print(f.evaluate_propmt(add_propmpt))
-print(f.evaluate_propmt(subtract_propmpt))
-print(f.evaluate_propmt(time_propmpt))
-print(f.evaluate_propmt(timer_propmpt))
+class Chat():
+    def __init__(self, f:Functions):
+        self.avaible_functions = f.avaible_functions()
+        self.history = [{"role": "system", "content":"You are a virtual assistant, you have no body, you are living inside a computer that is able to execute some functions"}]
+        print(self.avaible_functions)
+    def evaluate_propmpt(self,prompt:str):
+        self.history.append({"role": "user", "content": prompt})
+        if self.require_fuction(prompt):
+            f.evaluate_propmt(prompt)
+            #TODO How can I continue
+        res = AI.chat_complete(self.history,100)
+        print('\033[92m'+res+'\033[0m')
+        self.history.append({"role": "assistant", "content": res})
+    def confirm_selection(self, prompt:str)->bool:
+        messages=[
+            {"role": "system", "content": f"Answer 'F' If you dont agree or 'T' if you do  with the prompt, and justify your answer"},
+            {"role": "user", "content": "Do you agree that no action should be done to fullfill the request 'Hi, How are you doing today?'"},
+            {"role": "assistant", "content": "T\n"},
+            {"role": "user", "content": "Do you agree that no action should be done to fullfill the request 'Set a timer for five minutes'"},
+            {"role": "assistant", "content": "F\n"},
+            {"role": "user", "content": prompt},
+        ]
+        print(messages)
+        response = AI.chat_complete(messages,60)
+        while response not in ["F","T"]:
+            print(response)
+            response = AI.chat_complete(messages,1)
+        res =  True if response == "T" else False
+        return res
+
+    def require_fuction(self,prompt:str)->bool:
+        messages=[
+            {"role": "system", "content": f"Given a prompt, answer 'F' for false or 'T' for true if the prompt is a petition to execute any of the this fucntions: {self.avaible_functions} "},
+            {"role": "user", "content": "Hi, How are you doing today?"},
+            {"role": "assistant", "content": "F\n"},
+            {"role": "user", "content": "What time is it"},
+            {"role": "assistant", "content": "T\n"},
+            {"role": "user", "content": "Set a timer for five minutes"},
+            {"role": "assistant", "content": "T\n"},
+            {"role": "user", "content": prompt},
+        ]
+        response = AI.chat_complete(messages,1, mode="instruct")
+        print(response)
+        while response not in ["F","T"]:
+            print(response)
+            response = AI.chat_complete(messages,1,mode="instruct")
+        res =  True if response == "T" else False
+        return res
+        #verb = f"an execution of any of the functions {self.avaible_functions}" if res else "no action"
+        #print("CONFIRM")
+        #print(prompt)
+        #return self.confirm_selection(f"Do you agree that {verb} should be done to fulfill the request '{prompt}'")
+
+chat = Chat(f)
+
+#print(f.evaluate_propmt(add_propmpt))
+#print(f.evaluate_propmt(subtract_propmpt))
+#print(f.evaluate_propmt(time_propmpt))
+#print(f.evaluate_propmt(timer_propmpt))
+#print(f.evaluate_propmt("Hola como estas?"))
+while True:
+    p = input("> ")
+    chat.evaluate_propmpt(p)
+    #chat.require_fuction(p)
