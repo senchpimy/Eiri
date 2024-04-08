@@ -7,8 +7,11 @@ class Chat():
         if not role:
             role = f"""
             You are 'Eiri' a virtual assistant that can complete any task, your principal porpuse its to chat with the user, the user may ask you to execute some of the following functions: {" ,".join(self.avaible_functions)}
-            The user know what every functions does, you will not explin you abilitites unless you are asked to do so, you will not give examples of how to use the functions, not you will try to solve them
+            Assume that the user know you, what you can do and what every functions does, you will not explin you abilitites unless you are asked to do so, 
+            you will NOT give examples of how to use the functions, not you will try to solve them
             the system will tell you when a function was executed and what was its output if id had any
+
+            Dont worry about executing a function your main porpuse its to talk with the user
             """
         self.history = [{"role": "system", "content":role}]
         self.AI = AI
@@ -17,7 +20,10 @@ class Chat():
     def evaluate_propmpt(self,prompt:str):
         self.history.append({"role": "user", "content": prompt})
         if self.require_fuction(prompt):
-            self.f.evaluate_propmt(prompt) #Get result execute properly
+            result = self.f.evaluate_propmt(prompt) #Get result execute properly
+            match result.output:
+                case F.EnumResult.ERROR:
+                    pass
         res = self.AI.chat_complete(self.history,100)
         print("\033[92m"+res+"\033[0m") # This line messes auto indentation for some reason
         self.history.append({"role": "assistant", "content": res})
