@@ -1,3 +1,4 @@
+import time
 import ollama
 
 class AI:
@@ -22,7 +23,7 @@ class AI:
                     "Content-Type": "application/json"
                 }
 
-    def chat_complete_requests(self,messages:list[dict[str,str]], max_tokens:int,model:str="Llama", mode:str|None = None )->str:
+    def chat_complete_requests(self,messages:list[dict[str,str]],  max_tokens:int|None = None,model:str="Llama", mode:str|None = None )->str:
         assert (mode in ["chat", "instruct"])
         url  = self.base_url+"/chat/completions"
         data = {
@@ -32,13 +33,14 @@ class AI:
             "user_bio": "",
             "user_name": "",
             "messages": messages,
-            "max_tokens":max_tokens
         }
+        if max_tokens:
+            data["max_tokens"]=max_tokens
         response = self.lib.post(url, headers=self.headers, json=data, verify=False)
         assistant_message = response.json()['choices'][0]['message']['content']
         return assistant_message
 
-    def chat_complete_ollama(self,messages:list[dict[str,str]], max_tokens:int,model:str="mistral", mode:str|None = None )->str:
+    def chat_complete_ollama(self,messages:list[dict[str,str]], max_tokens:int|None = None,model:str="mistral", mode:str|None = None )->str:
         url  = self.base_url+"/chat/completions"
         data = {
             "model":model,
@@ -46,9 +48,10 @@ class AI:
             "user_bio": "",
             "user_name": "",
             "messages": messages,
-            "max_tokens":max_tokens,
             "stream":False
         }
+        if max_tokens:
+            data["max_tokens"]=max_tokens
         #response = ollama.chat(model=model, messages=messages, max_tokens=max_tokens)
         response = self.lib.post(url, headers=self.headers, json=data, verify=False)
         assistant_message = response.json()['choices'][0]['message']['content']

@@ -37,6 +37,7 @@ f.add(Timer)
 chat = Chat(f, AI)
 
 while True:
+    print("loop 5")
     p = input("> ")
     chat.evaluate_propmpt(p)
     #chat.require_fuction(p)

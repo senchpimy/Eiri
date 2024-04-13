@@ -29,23 +29,23 @@ class Functions:
     def add(self, cl):
         self.fn[cl.__name__.lower()] = cl #To lower???
 
-    def execute_function_single(self, func, result)->FunctionResult:
-        try: 
-            out = func()
-            output = f" with result {out}" if out else ""
-            self.log(f"Executed fuction {result}{output}")
-            return FunctionResult(out,EnumResult.SUCCES)
-        except: 
-            return FunctionResult(None,EnumResult.ERROR)
+    def execute_function(self, func, name,args=None)->FunctionResult:
+        if args:
+            try:
+                out = func(*args)
+            except:
+                out = EnumResult.ERROR
+        else:
+            try:
+                out = func()
+            except:
+                out = EnumResult.ERROR
+        if out == EnumResult.ERROR:
+            return FunctionResult(None,out)
 
-    def execute_function_args(self, func, result,args)->FunctionResult:
-        try: 
-            out = func(*args)
-            output = f" with result {out}" if out else ""
-            self.log(f"Executed fuction {result}{output}")
-            return FunctionResult(out,EnumResult.SUCCES)
-        except: 
-            return FunctionResult(None,EnumResult.ERROR)
+        output = f" with result {out}" if out else ""
+        self.log(f"Executed fuction {name}{output}")
+        return FunctionResult(out,EnumResult.SUCCES)
 
     def get_posibble_function(self, prompt:str)->str:
         #Verify that the function exists
@@ -70,15 +70,6 @@ class Functions:
     def logger(self,log):
         self.logger_arr = log
 
-    def execute_fuction(self,func,name,args=None):
-        if args:
-            out = func(*args)
-        else:
-            out = func()
-        output = f" with result {out}" if out else ""
-        print(f"ULTIMO MENSAJE: {self.logger_arr}")
-        self.log(f"Executed fuction {name}{output}")
-        return out
 
     def log(self,result:str):
         #print('\033[94m'+result+'\033[0m')
@@ -88,12 +79,20 @@ class Functions:
     def evaluate_propmt(self,prompt:str)->FunctionResult:
         result = self.get_posibble_function(prompt)
         func = self.fn[result]
+        messages=[
+                    {"role": "system", "content": "Given a request to execute a function with a specified signature, provide the correct arguments to fulfill the request"},
+                    {"role": "user", "content": "Given the request 'What is the value of the sum of the numbers 5 then 7' and the function 'addition' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
+                    {"role": "assistant", "content": f"5,7{self.end}"},
+                    {"role": "user", "content": "Given the request 'How much is 14 minus 9' and the function 'substraction' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
+                    {"role": "assistant", "content": f"14,9{self.end}"},
+                    #{"role": "user", "content": full_prompt},
+                ]
 
         if isinstance(func,type):
             instance = func()
             insp = self.count_arguments(instance.execute) #Verify that such function exists
             if len(insp)==0:
-                return self.execute_function_single(instance.execute,result)
+                return self.execute_function(instance.execute,result)
 
             types = [nota.annotation for nota in insp.values()]
             ## TODO add the description
@@ -104,17 +103,11 @@ class Functions:
             print("########################")
             print(full_prompt)
             print("########################")
-            messages = [
-                        {"role": "system", "content": "Given a request to execute a function with a specified signature, provide the correct arguments to fulfill the request"},
-                        {"role": "user", "content": "Given the request 'What is the value of the sum of the numbers 5 then 7' and the function 'addition' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
-                        {"role": "assistant", "content": f"5,7{self.end}"},
-                        {"role": "user", "content": "Given the request 'How much is 14 minus 9' and the function 'substraction' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
-                        {"role": "assistant", "content": f"14,9{self.end}"},
-                        {"role": "user", "content": full_prompt},
-                    ]
+            messages.append({"role": "user", "content": full_prompt})
             if hasattr(instance, "examples"):
                 messages=messages[:-2] + instance.examples + messages[-2:]
             while True:
+                print("loop 2")
                 response = self.AI.chat_complete(messages,20)
                 answer :str = response.lower().replace(" ","").replace(" ","").split("\n")[0]
                 print("ANSWER:"+answer)
@@ -131,25 +124,18 @@ class Functions:
                     if hasattr(instance, "verify"):
                         if not instance.verify(*args_correct): continue
                     print("###TERMINATE####")
-                    return self.execute_fuction(instance.execute,result,args_correct)
+                    return self.execute_function(instance.execute,result,args_correct)
         else:
             insp = self.count_arguments(func)
             if len(insp)==0:
-                return self.execute_function_single(func,result)
+                return self.execute_function(func,result)
             types = [nota.annotation for nota in insp.values()]
             full_prompt=f"Given the request '{prompt}' and the function '{result}' wich takes {len(insp)} arguments with the notation ({', '.join([nota.__name__ for nota in types])}), which arguments are the correct to fullfill the request"
             print("########################")
             print(full_prompt)
             print("########################")
+            messages.append({"role": "user", "content": full_prompt})
             while True:
-                messages=[
-                    {"role": "system", "content": "Given a request to execute a function with a specified signature, provide the correct arguments to fulfill the request"},
-                    {"role": "user", "content": "Given the request 'What is the value of the sum of the numbers 5 then 7' and the function 'addition' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
-                    {"role": "assistant", "content": f"5,7{self.end}"},
-                    {"role": "user", "content": "Given the request 'How much is 14 minus 9' and the function 'substraction' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
-                    {"role": "assistant", "content": f"14,9{self.end}"},
-                    {"role": "user", "content": full_prompt},
-                ]
                 response = self.AI.chat_complete(messages,20)
                 answer :str = response.lower().replace(" ","").split("\n")[0]
                 print("ANSWER:"+answer)
@@ -163,4 +149,5 @@ class Functions:
                         except:
                             cont = True
                     if cont: continue
-                    return func(*args_correct)
+                    #return func(*args_correct)
+                    return self.execute_function(func,result,args_correct)
