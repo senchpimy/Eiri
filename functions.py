@@ -2,6 +2,41 @@ import inspect
 from enum import Enum
 import req
 
+def toInt(value)-> int|None:
+    try:
+        return int(value)
+    except ValueError:
+        try:
+            return int(value.strip("'\""))
+        except ValueError:
+            return None
+
+def toFloat(value)-> float|None:
+    try:
+        return float(value)
+    except ValueError:
+        try:
+            return float(value.strip("'\""))
+        except ValueError:
+            return None
+
+def toString(value:str)-> str|None:
+    if value.startswith(('"',"'")) and value.endswith(('"',"'")):
+        value = value[1:-1]
+    return value
+
+def cut_string(text):
+    for i, char in enumerate(text):
+        if not char.isalpha():
+            return text[:i]
+    return text
+
+types_covert={
+        int:toInt,
+        str:toString,
+        float:toFloat,
+        }
+
 class EnumResult(Enum):
     SUCCES=0 # The function executed correctly
     ERROR=1 # The function failed
@@ -14,9 +49,8 @@ class FunctionResult:
 
 
 class Functions:
-    def __init__(self,AI:req.AI,end = None) -> None:
+    def __init__(self,AI:req.AI) -> None:
         self.fn= {}
-        self.end = "\n" if end is None else end
         self.logger_arr = []
         self.AI = AI
 
@@ -52,19 +86,23 @@ class Functions:
         full_prompt=f"Given the following list of functions, please select the one that is best suited to fullfill the request '{prompt}':  {', '.join(self.fn.keys())} "
         result = ""
         while result not in self.fn:
-            messages=[
+            print("loop 1 x")
+            messages=[ #Añadir ejemplos de cada funcion
                 {"role": "system", "content": "You are an assistant that can only answer ONE word"},
-                {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'How much is 5 plus 7': addition, subtraction, time"},
-                {"role": "assistant", "content": f"addition{self.end}"},
-                {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'How much is 14 minus 9': addition, subtraction, time"},
-                {"role": "assistant", "content": f"subtraction{self.end}"},
-                {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'What time it is?': addition, subtraction, time"},
-                {"role": "assistant", "content": f"time{self.end}"},
+                {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'How much is 5 plus 7': addition, subtraction, time,timer"},
+                {"role": "assistant", "content": f"addition\n"},
+                {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'How much is 14 minus 9': addition, subtraction, time, timer"},
+                {"role": "assistant", "content": f"subtraction\n"},
+                {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'What time it is?': addition, subtraction, time, timer"},
+                {"role": "assistant", "content": f"time\n"},
+                #{"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'set a timer for 3 hours' addition, subtraction, time, timer"},
+                #{"role": "assistant", "content": f"time"},
                 {"role": "user", "content": full_prompt}
                 ]
-            response = self.AI.chat_complete(messages,10)
+            response = self.AI.chat_complete(messages,20)
             answer_first:str = response.lower().replace(" ","").replace(" ","") #To lower???
-            result = answer_first.split("\n")[0]
+            preresult = answer_first.split("\n")[0]
+            result = cut_string(preresult)
         return result
 
     def logger(self,log):
@@ -72,7 +110,7 @@ class Functions:
 
 
     def log(self,result:str):
-        #print('\033[94m'+result+'\033[0m')
+        print('\033[94m'+result+'\033[0m')
         log = {"role": "user", "content": result},
         self.logger_arr.append(log)
 
@@ -82,9 +120,9 @@ class Functions:
         messages=[
                     {"role": "system", "content": "Given a request to execute a function with a specified signature, provide the correct arguments to fulfill the request"},
                     {"role": "user", "content": "Given the request 'What is the value of the sum of the numbers 5 then 7' and the function 'addition' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
-                    {"role": "assistant", "content": f"5,7{self.end}"},
+                    {"role": "assistant", "content": f"5,7"},
                     {"role": "user", "content": "Given the request 'How much is 14 minus 9' and the function 'substraction' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
-                    {"role": "assistant", "content": f"14,9{self.end}"},
+                    {"role": "assistant", "content": f"14,9"},
                     #{"role": "user", "content": full_prompt},
                 ]
 
@@ -129,13 +167,14 @@ class Functions:
             insp = self.count_arguments(func)
             if len(insp)==0:
                 return self.execute_function(func,result)
-            types = [nota.annotation for nota in insp.values()]
+            types = [types_covert[nota.annotation] for nota in insp.values()]
             full_prompt=f"Given the request '{prompt}' and the function '{result}' wich takes {len(insp)} arguments with the notation ({', '.join([nota.__name__ for nota in types])}), which arguments are the correct to fullfill the request"
-            print("########################")
-            print(full_prompt)
-            print("########################")
+            #print("########################")
+            #print(full_prompt)
+            #print("########################")
             messages.append({"role": "user", "content": full_prompt})
             while True:
+                print("loop 3")
                 response = self.AI.chat_complete(messages,20)
                 answer :str = response.lower().replace(" ","").split("\n")[0]
                 print("ANSWER:"+answer)
@@ -145,9 +184,10 @@ class Functions:
                 if len(insp) == len(args) == len(types):
                     for index,arg in enumerate(args):
                         try:
-                            args_correct.append(types[index](arg)) ## Some parsing could be useful
+                            args_correct.append(types[index](arg))
                         except:
                             cont = True
+                            break
                     if cont: continue
                     #return func(*args_correct)
                     return self.execute_function(func,result,args_correct)

@@ -1,10 +1,8 @@
-import time
-import ollama
-
 class AI:
-    def __init__(self,mode="request",base_url="http://127.0.0.1:5000/v1"):
+    def __init__(self,mode="request",base_url="http://127.0.0.1:5000/v1", model=None):
         assert (mode in ["request", "ollama"])
         self.lib = None
+        self.model=model
         match mode:
             case "request":
                 import requests as lib
@@ -23,11 +21,12 @@ class AI:
                     "Content-Type": "application/json"
                 }
 
-    def chat_complete_requests(self,messages:list[dict[str,str]],  max_tokens:int|None = None,model:str="Llama", mode:str|None = None )->str:
+    def chat_complete_requests(self,messages:list[dict[str,str]],  max_tokens = None,stop=None, model=None, mode:str|None = None )->str:
         assert (mode in ["chat", "instruct"])
         url  = self.base_url+"/chat/completions"
+        use_model = self.model if model == None else model
         data = {
-            "model":model,
+            "model":use_model,
             "mode": mode,
             "character": "Example",
             "user_bio": "",
@@ -36,14 +35,17 @@ class AI:
         }
         if max_tokens:
             data["max_tokens"]=max_tokens
+        if stop:
+            data["stop"] = stop
         response = self.lib.post(url, headers=self.headers, json=data, verify=False)
         assistant_message = response.json()['choices'][0]['message']['content']
         return assistant_message
 
-    def chat_complete_ollama(self,messages:list[dict[str,str]], max_tokens:int|None = None,model:str="mistral", mode:str|None = None )->str:
+    def chat_complete_ollama(self,messages:list[dict[str,str]],  max_tokens = None,stop=None, model=None, mode:str|None = None )->str:
         url  = self.base_url+"/chat/completions"
+        use_model = self.model if model == None else model
         data = {
-            "model":model,
+            "model":use_model,
             "character": "Example",
             "user_bio": "",
             "user_name": "",
@@ -52,6 +54,8 @@ class AI:
         }
         if max_tokens:
             data["max_tokens"]=max_tokens
+        if stop:
+            data["stop"]=stop
         #response = ollama.chat(model=model, messages=messages, max_tokens=max_tokens)
         response = self.lib.post(url, headers=self.headers, json=data, verify=False)
         assistant_message = response.json()['choices'][0]['message']['content']

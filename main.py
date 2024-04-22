@@ -2,7 +2,7 @@ import req
 import functions as F
 from chat import Chat
 
-AI = req.AI(mode="ollama")
+AI = req.AI(mode="ollama", model="llama3")
 
 def addition(x:int, y:int) -> int:
     return x + y
@@ -37,7 +37,6 @@ f.add(Timer)
 chat = Chat(f, AI)
 
 while True:
-    print("loop 5")
     p = input("> ")
     chat.evaluate_propmpt(p)
     #chat.require_fuction(p)
