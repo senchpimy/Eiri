@@ -27,7 +27,7 @@ def toString(value:str)-> str|None:
 
 def cut_string(text):
     for i, char in enumerate(text):
-        if not char.isalpha():
+        if char in [".",",","-"]:
             return text[:i]
     return text
 
@@ -47,12 +47,12 @@ class FunctionResult:
         self.value = value
         self.o_enum = o_enum
 
-
 class Functions:
-    def __init__(self,AI:req.AI) -> None:
+    def __init__(self,AI:req.AI, max_tries=7) -> None:
         self.fn= {}
         self.logger_arr = []
         self.AI = AI
+        self.max_tries = max_tries
 
     def count_arguments(self,func):
         return inspect.signature(func).parameters
@@ -82,32 +82,37 @@ class Functions:
         return FunctionResult(out,EnumResult.SUCCES)
 
     def get_posibble_function(self, prompt:str)->str:
-        #Verify that the function exists
+        #   Verify that the function exists
+        #   Return Error if its not found
+        #   Give feedback
         full_prompt=f"Given the following list of functions, please select the one that is best suited to fullfill the request '{prompt}':  {', '.join(self.fn.keys())} "
+        print(full_prompt)
         result = ""
-        while result not in self.fn:
-            print("loop 1 x")
-            messages=[ #Añadir ejemplos de cada funcion
-                {"role": "system", "content": "You are an assistant that can only answer ONE word"},
-                {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'How much is 5 plus 7': addition, subtraction, time,timer"},
-                {"role": "assistant", "content": f"addition\n"},
-                {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'How much is 14 minus 9': addition, subtraction, time, timer"},
-                {"role": "assistant", "content": f"subtraction\n"},
-                {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'What time it is?': addition, subtraction, time, timer"},
-                {"role": "assistant", "content": f"time\n"},
-                #{"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'set a timer for 3 hours' addition, subtraction, time, timer"},
-                #{"role": "assistant", "content": f"time"},
-                {"role": "user", "content": full_prompt}
-                ]
+        num_tries = 0
+        messages=[ #Añadir ejemplos de cada funcion
+            {"role": "system", "content": "You are an assistant that can only answer ONE word"},
+            {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'How much is 5 plus 7': addition, subtraction, time,timer"},
+            {"role": "assistant", "content": f"addition\n"},
+            {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'How much is 14 minus 9': addition, subtraction, time, timer"},
+            {"role": "assistant", "content": f"subtraction\n"},
+            {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'What time it is?': addition, subtraction, time, timer"},
+            {"role": "assistant", "content": f"time\n"},
+            {"role": "user", "content": full_prompt}
+        ]
+        while result not in self.fn and num_tries<self.max_tries:
             response = self.AI.chat_complete(messages,20)
+            print(response)
             answer_first:str = response.lower().replace(" ","").replace(" ","") #To lower???
             preresult = answer_first.split("\n")[0]
             result = cut_string(preresult)
+            num_tries+=1
+        if num_tries==self.max_tries:
+            #TODO return a error
+            pass
         return result
 
     def logger(self,log):
         self.logger_arr = log
-
 
     def log(self,result:str):
         print('\033[94m'+result+'\033[0m')
@@ -123,7 +128,7 @@ class Functions:
                     {"role": "assistant", "content": f"5,7"},
                     {"role": "user", "content": "Given the request 'How much is 14 minus 9' and the function 'substraction' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
                     {"role": "assistant", "content": f"14,9"},
-                    #{"role": "user", "content": full_prompt},
+                   # {"role": "user", "content": full_prompt},
                 ]
 
         if isinstance(func,type):
@@ -145,9 +150,11 @@ class Functions:
             if hasattr(instance, "examples"):
                 messages=messages[:-2] + instance.examples + messages[-2:]
             while True:
+                
                 print("loop 2")
-                response = self.AI.chat_complete(messages,20)
-                answer :str = response.lower().replace(" ","").replace(" ","").split("\n")[0]
+                response = self.AI.chat_complete(messages,50)
+                #answer :str = response.lower().replace(" ","").replace(" ","").split("\n")[0]
+                answer :str = response.lower()#.split("\n")
                 print("ANSWER:"+answer)
                 args = answer.split(",")
                 args_correct = []

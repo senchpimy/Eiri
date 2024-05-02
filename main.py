@@ -30,13 +30,46 @@ class Timer:
              return False
          return True
 
+class Add_Calendar_Event:
+    def __init__(self):
+        self.description = "The first argument must be a string representing the title, the second argument must be a string representing the date, and the third argument must be a string representing the description."
+        self.examples = [
+            {
+                "role": "user",
+                "content": "Could you please add an event titled 'Conference Call' on 2024-05-03 at 10:00 AM with description 'Discuss quarterly goals'?",
+                "response": "Conference Call,2024-05-03,Discuss quarterly goals\n"
+            },
+            {
+                "role": "user",
+                "content": "I need to schedule a meeting titled 'Team Sync' for tomorrow with description 'Review project timelines'.",
+                "response": "Team Sync,2024-05-02,Review project timelines\n"
+            },
+            {
+                "role": "user",
+                "content": "Add an event called 'Lunch with Clients' on 2024-05-05 at 12:30 PM to discuss the new product launch.",
+                "response": "Lunch with Clients,2024-05-05,Discuss the new product launch\n"
+            }
+        ]
+
+    def execute(self, title: str, date: str, description: str):
+        print(f"Event '{title}' added on {date} with description: {description}")
+
+    def verify(self, title: str, date: str, description: str) -> bool:
+        if not all([title, date, description]):
+            return False
+        return True
+
 f = F.Functions(AI)
 f.add(get_current_time)
 f.add(Timer)
+f.add(Add_Calendar_Event)
 
 chat = Chat(f, AI)
 
 while True:
     p = input("> ")
+    if p == r"\i":
+        chat.print_log()
+        continue
     chat.evaluate_propmpt(p)
     #chat.require_fuction(p)

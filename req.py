@@ -1,3 +1,6 @@
+import log
+
+
 class AI:
     def __init__(self,mode="request",base_url="http://127.0.0.1:5000/v1", model=None):
         assert (mode in ["request", "ollama"])
@@ -58,9 +61,12 @@ class AI:
             data["stop"]=stop
         #response = ollama.chat(model=model, messages=messages, max_tokens=max_tokens)
         response = self.lib.post(url, headers=self.headers, json=data, verify=False)
-        assistant_message = response.json()['choices'][0]['message']['content']
+        try:
+            assistant_message = response.json()['choices'][0]['message']['content']
+            return assistant_message
+        except Exception as e:
+            log.print_error(f"Error getting the Response: {e}")
         #assistant_message = response.json()
-        return assistant_message
 
 
 

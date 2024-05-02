@@ -1,10 +1,13 @@
 import multiprocessing
 import functions as F
 import req
+import log
+
 manager = multiprocessing.Manager()
 
 def simple_chat(chat, p):
-    p["res"] = chat.AI.chat_complete(chat.history)
+    res = chat.AI.chat_complete(chat.history)
+    p["res"] = res
 
 class Chat():
     def __init__(self, f:F.Functions, AI:req.AI, role:str|None = None):
@@ -28,8 +31,7 @@ Dont worry about executing a function your main porpuse its to talk with the use
             result = self.f.evaluate_propmt(prompt)
             match result.o_enum:
                 case F.EnumResult.ERROR:
-                    self.history.append({"role": "system", "content": "The function throw a exception"})
-                    pass
+                    self.history.append({"role": "system", "content": "The function throw a exception"}) #TODO more handle?
                 case F.EnumResult.SUCCES:
                     self.history.append({"role": "system", "content": "The function was succesfully executed "})
         p = multiprocessing.Process(target=simple_chat,args=(self,self.last_response))
@@ -42,8 +44,11 @@ Dont worry about executing a function your main porpuse its to talk with the use
             self.history[-1]["content"] = nw_prompt+". Please keep it short" # Limiting the ouput
             self.last_response["res"]=  self.AI.chat_complete(self.history,stop="\n")
         res = self.last_response["res"]
-        print("\033[92m"+res+"\033[0m") # This line messes auto indentation for some reason
+        log.print_assitant(res)
         self.history.append({"role": "assistant", "content": res})
+
+    def confirm_request(self):
+        pass
 
     def require_function(self,prompt:str)->bool:
         system = f"""You are analyzing messages of a user one at a time, the user is having a conversation your task is to read the message and decide if he wants to execute a function, 
@@ -85,11 +90,11 @@ given a message, answer 'F' for false or 'T' for true if the prompt is a petitio
             #{"role": "assistant", "content": "F\n"},
 
             {"role": "user", "content": prompt},]
-        response = self.AI.chat_complete(exa_messages,1, mode="instruct")
+        response = self.AI.chat_complete(exa_messages,1)
         result = self.get_truefalse(response)
         tries = 5
         while result == None:
-            response = self.AI.chat_complete(exa_messages,1,mode="instruct")
+            response = self.AI.chat_complete(exa_messages,1)
             result = self.get_truefalse(response)
             tries-=1
             if not tries:
@@ -106,4 +111,7 @@ given a message, answer 'F' for false or 'T' for true if the prompt is a petitio
         elif response == 'F':
             val = False
         return val
+
+    def print_log(self):
+        log.print_chat(self.history)
 
