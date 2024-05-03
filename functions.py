@@ -1,6 +1,8 @@
 import inspect
 from enum import Enum
 import req
+from typing import Any
+import log
 
 def toInt(value)-> int|None:
     try:
@@ -43,9 +45,11 @@ class EnumResult(Enum):
     SYNTAX_ERROR=2 # Wrong format for the function
 
 class FunctionResult:
-    def __init__(self,value, o_enum:EnumResult) -> None:
+    def __init__(self,value, o_enum:EnumResult, report:str, error=None) -> None:
         self.value = value
         self.o_enum = o_enum
+        self.report = report
+        self.error = error
 
 class Functions:
     def __init__(self,AI:req.AI, max_tries=7) -> None:
@@ -63,23 +67,28 @@ class Functions:
     def add(self, cl):
         self.fn[cl.__name__.lower()] = cl #To lower???
 
-    def execute_function(self, func, name,args=None)->FunctionResult:
+    def execute_function(self, func:type, name,args=None|list[object])->FunctionResult:
+        str_args = f" with arguments {', '.join(str(x) for x in args)}" if args else ""
+        res_str = f"executing {func.__name__}{str_args}"
+        error_str = None
         if args:
             try:
                 out = func(*args)
-            except:
+            except Exception as e :
+                error_str = e.__str__()
                 out = EnumResult.ERROR
         else:
             try:
                 out = func()
-            except:
+            except Exception as e :
+                error_str = e.__str__()
                 out = EnumResult.ERROR
         if out == EnumResult.ERROR:
-            return FunctionResult(None,out)
+            return FunctionResult(None,out,res_str,error=error_str)
 
         output = f" with result {out}" if out else ""
         self.log(f"Executed fuction {name}{output}")
-        return FunctionResult(out,EnumResult.SUCCES)
+        return FunctionResult(out,EnumResult.SUCCES,res_str)
 
     def get_posibble_function(self, prompt:str)->str:
         #   Verify that the function exists
@@ -115,9 +124,9 @@ class Functions:
         self.logger_arr = log
 
     def log(self,result:str):
-        print('\033[94m'+result+'\033[0m')
-        log = {"role": "user", "content": result},
-        self.logger_arr.append(log)
+        log.print_function_log(result)
+        nlog = {"role": "user", "content": result},
+        self.logger_arr.append(nlog)
 
     def evaluate_propmt(self,prompt:str)->FunctionResult:
         result = self.get_posibble_function(prompt)

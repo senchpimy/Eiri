@@ -7,3 +7,6 @@ def print_assitant(str):
 
 def print_error(str):
     print("\033[93m"+str+"\033[0m")
+
+def print_function_log(str):
+    print("\033[94m"+str+"\033[0m")
