@@ -68,26 +68,25 @@ class Functions:
         self.fn[cl.__name__.lower()] = cl #To lower???
 
     def execute_function(self, func:type, name,args=None|list[object])->FunctionResult:
-        str_args = f" with arguments {', '.join(str(x) for x in args)}" if args else ""
-        res_str = f"executing {func.__name__}{str_args}"
+        str_args = f" with the arguments '{', '.join(map(str,args))}'" if args else ""
+        res_str = f"executing {name}{str_args}"
         error_str = None
-        if args:
-            try:
+        try:
+            if args:
                 out = func(*args)
-            except Exception as e :
-                error_str = e.__str__()
-                out = EnumResult.ERROR
-        else:
-            try:
+            else:
                 out = func()
-            except Exception as e :
-                error_str = e.__str__()
-                out = EnumResult.ERROR
+        except Exception as e:
+            error_str = str(e)
+            out = EnumResult.ERROR
+        else:
+            error_str = None
+
         if out == EnumResult.ERROR:
             return FunctionResult(None,out,res_str,error=error_str)
 
-        output = f" with result {out}" if out else ""
-        self.log(f"Executed fuction {name}{output}")
+        #output = f" with result {out}" if out else ""
+        #self.log(f"Executed fuction {name}{output}") # Right now Useless to log inside the function class
         return FunctionResult(out,EnumResult.SUCCES,res_str)
 
     def get_posibble_function(self, prompt:str)->str:

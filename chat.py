@@ -13,12 +13,19 @@ class Chat():
     def __init__(self, f:F.Functions, AI:req.AI, role:str|None = None):
         self.avaible_functions = f.avaible_functions()
         if not role:
-            role = f"""You are 'Eiri' a virtual assistant that can complete any task, your principal porpuse its to chat with the user, the user may ask you to execute some of the following functions: {" ,".join(self.avaible_functions)}
+            role = f"""
+            <s>[INST] <<SYS>>
+            You are 'Eiri' a virtual assistant that can complete any task, your principal porpuse its to chat with the user, the user may ask you to execute some of the following functions: {" ,".join(self.avaible_functions)}
 The user already know you, knows what you can do and knows what every functions does, you will NOT explain you abilitites and you will NOT give examples or tell the user about what you can do UNLESS you are asked to do so.
 you will NOT give examples of how to use the functions, nor you will try to solve them
 the system will tell you when a function was executed and what was its output if id had any
 
-Dont worry about executing a function your main porpuse its to talk with the user, so tal to them with a friendly actitude, try to be funny """
+Dont make up facts about the functions, you will report what the system tell you about the function
+
+Dont worry about executing a function your main porpuse its to talk with the user, so tal to them with a friendly actitude, try to be funny
+
+<</SYS>>
+"""
         self.history = [{"role": "system", "content":role}]
         self.AI = AI
         self.f = f
@@ -31,9 +38,13 @@ Dont worry about executing a function your main porpuse its to talk with the use
             result = self.f.evaluate_propmt(prompt)
             match result.o_enum:
                 case F.EnumResult.ERROR:
-                    self.history.append({"role": "system", "content": "The function throw a exception"}) #TODO more handle?
+                    self.history.append({"role": "user", "content": f"<s>[INST] <<SYS>>\nThe function throw a exception:{result.report}.\nERROR: {result.error}\nInform the user about this\n<</SYS>>"}) #TODO more handle?
                 case F.EnumResult.SUCCES:
-                    self.history.append({"role": "system", "content": "The function was succesfully executed "})
+                    try:
+                        output_str = f" and the function returned {str(result.value)}" if result.value else ""
+                    except: #The result doesnt implement __str__()
+                        output_str = ""
+                    self.history.append({"role": "user", "content": f"<s>[INST] <<SYS>>\nThe function was succesfully executed:{result.report}{output_str}\nInform the user about this\n<</SYS>>"})
         p = multiprocessing.Process(target=simple_chat,args=(self,self.last_response))
         p.start()
         p.join(5)

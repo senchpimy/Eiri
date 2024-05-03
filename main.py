@@ -23,7 +23,6 @@ class Timer:
 
     def execute(self, time:str, cuantity:int):
         print(f"IT WAS EXECUTED: {cuantity} {time}")
-        pass
 
     def verify(self, time:str, cuantity:int)-> bool:
          if time not in ['minutes', 'hours']:
