@@ -23,7 +23,6 @@ the system will tell you when a function was executed and what was its output if
 Dont make up facts about the functions, you will report what the system tell you about the function
 
 Dont worry about executing a function your main porpuse its to talk with the user, so tal to them with a friendly actitude, try to be funny
-
 <</SYS>>
 """
         self.history = [{"role": "system", "content":role}]
@@ -47,7 +46,7 @@ Dont worry about executing a function your main porpuse its to talk with the use
                     self.history.append({"role": "user", "content": f"<s>[INST] <<SYS>>\nThe function was succesfully executed:{result.report}{output_str}\nInform the user about this\n<</SYS>>"})
         p = multiprocessing.Process(target=simple_chat,args=(self,self.last_response))
         p.start()
-        p.join(5)
+        p.join(50)
         if p.is_alive():
             p.terminate()
             print("Tardo Demasiado!!")
@@ -101,8 +100,7 @@ given a message, answer 'F' for false or 'T' for true if the prompt is a petitio
             #{"role": "assistant", "content": "F\n"},
 
             {"role": "user", "content": prompt},]
-        response = self.AI.chat_complete(exa_messages,1)
-        result = self.get_truefalse(response)
+        result = None
         tries = 5
         while result == None:
             response = self.AI.chat_complete(exa_messages,1)
@@ -110,7 +108,7 @@ given a message, answer 'F' for false or 'T' for true if the prompt is a petitio
             tries-=1
             if not tries:
                 print("MAX TRIES REACHED")
-                return False
+                return False #TODO maybe return something else ???
         return result
 
     def get_truefalse(self,text:str)->bool|None:

@@ -1,7 +1,6 @@
 import inspect
 from enum import Enum
 import req
-from typing import Any
 import log
 
 def toInt(value)-> int|None:
@@ -23,6 +22,15 @@ def toFloat(value)-> float|None:
             return None
 
 def toString(value:str)-> str|None:
+    start = 0
+    while start < len(value) and value[start].isspace():
+        start += 1
+    
+    end = len(value) - 1
+    while end >= 0 and value[end].isspace():
+        end -= 1
+    
+    value = value[start:end+1]
     if value.startswith(('"',"'")) and value.endswith(('"',"'")):
         value = value[1:-1]
     return value
@@ -33,7 +41,7 @@ def cut_string(text):
             return text[:i]
     return text
 
-types_covert={
+types_convert={
         int:toInt,
         str:toString,
         float:toFloat,
@@ -67,7 +75,7 @@ class Functions:
     def add(self, cl):
         self.fn[cl.__name__.lower()] = cl #To lower???
 
-    def execute_function(self, func:type, name,args=None|list[object])->FunctionResult:
+    def execute_function(self, func:type, name,args=None)->FunctionResult:
         str_args = f" with the arguments '{', '.join(map(str,args))}'" if args else ""
         res_str = f"executing {name}{str_args}"
         error_str = None
@@ -98,7 +106,7 @@ class Functions:
         result = ""
         num_tries = 0
         messages=[ #Añadir ejemplos de cada funcion
-            {"role": "system", "content": "You are an assistant that can only answer ONE word"},
+            {"role": "system", "content": "You are an assistant that can only answer ONE word, given a list of functions and a sentence, select the best function between the others that can comply with the petition"},
             {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'How much is 5 plus 7': addition, subtraction, time,timer"},
             {"role": "assistant", "content": f"addition\n"},
             {"role": "user", "content": "Given the following list of functions, please select the one that is best suited to fullfill the request 'How much is 14 minus 9': addition, subtraction, time, timer"},
@@ -131,7 +139,14 @@ class Functions:
         result = self.get_posibble_function(prompt)
         func = self.fn[result]
         messages=[
-                    {"role": "system", "content": "Given a request to execute a function with a specified signature, provide the correct arguments to fulfill the request"},
+                    {"role": "system", "content": """<s>[INST] <<SYS>>You're a system designed to help to execute functions, limit yourself to only answer with the correct arguments to execute such function, you will not explain what you will do and you will not try to execute code, since that will hurt the system and could be fatal
+    1.-Begin by analyzing the request for executing a function.
+    2.-Identify and extract the specific arguments required for the function.
+    3.-Ensure that the extracted arguments are accurately separated by commas.
+    4.-Provide the extracted arguments as the response, without adding any additional information.
+    5.-It's crucial to refrain from attempting to call the function during this process. The focus should solely be on extracting and presenting the arguments.
+<</SYS>>
+                     """},
                     {"role": "user", "content": "Given the request 'What is the value of the sum of the numbers 5 then 7' and the function 'addition' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
                     {"role": "assistant", "content": f"5,7"},
                     {"role": "user", "content": "Given the request 'How much is 14 minus 9' and the function 'substraction' wich takes 2 arguments with the notation (int, int), which arguments are the correct to fullfill the request"},
@@ -151,9 +166,6 @@ class Functions:
             if hasattr(instance, "description"):
                 optional= f" with the description '{instance.description}'"
             full_prompt=f"Given the request '{prompt}' and the function '{result}'{optional} wich takes {len(insp)} arguments with the notation ({', '.join([nota.__name__ for nota in types])}), which arguments are the correct to fullfill the request"
-            print("########################")
-            print(full_prompt)
-            print("########################")
             messages.append({"role": "user", "content": full_prompt})
             if hasattr(instance, "examples"):
                 messages=messages[:-2] + instance.examples + messages[-2:]
@@ -161,8 +173,8 @@ class Functions:
                 
                 print("loop 2")
                 response = self.AI.chat_complete(messages,50)
-                #answer :str = response.lower().replace(" ","").replace(" ","").split("\n")[0]
-                answer :str = response.lower()#.split("\n")
+                answer :str = response.lower().split("\n")[0].replace(" ","").replace(" ","")
+                #answer :str = response.lower()#.split("\n")
                 print("ANSWER:"+answer)
                 args = answer.split(",")
                 args_correct = []
@@ -182,7 +194,7 @@ class Functions:
             insp = self.count_arguments(func)
             if len(insp)==0:
                 return self.execute_function(func,result)
-            types = [types_covert[nota.annotation] for nota in insp.values()]
+            types = [types_convert[nota.annotation] for nota in insp.values()]
             full_prompt=f"Given the request '{prompt}' and the function '{result}' wich takes {len(insp)} arguments with the notation ({', '.join([nota.__name__ for nota in types])}), which arguments are the correct to fullfill the request"
             #print("########################")
             #print(full_prompt)

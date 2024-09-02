@@ -10,8 +10,11 @@ def addition(x:int, y:int) -> int:
 def subtraction(x:int, y:int)->int:
     return x - y
 
-def get_current_time()->str:
-    return "Time now"
+def get_current_date()->str:
+    from datetime import date
+    today = date.today()
+    d = today.strftime("%B %d, %Y")
+    return d
 
 class Timer:
     def __init__(self)->None:
@@ -31,7 +34,14 @@ class Timer:
 
 class Add_Calendar_Event:
     def __init__(self):
-        self.description = "The first argument must be a string representing the title, the second argument must be a string representing the date, and the third argument must be a string representing the description."
+        #self.description = "The first argument must be a string representing the title, the second argument must be a string representing the date, and the third argument must be a string representing the description."
+        self.description = """
+The function requires three arguments in the following order:
+
+    A string indicating the title.
+    A string specifying the date with the format: YYYY-MM-DD.
+    A string describing the content.
+        """
         self.examples = [
             {
                 "role": "user",
@@ -59,7 +69,7 @@ class Add_Calendar_Event:
         return True
 
 f = F.Functions(AI)
-f.add(get_current_time)
+f.add(get_current_date)
 f.add(Timer)
 f.add(Add_Calendar_Event)
 
@@ -67,6 +77,7 @@ chat = Chat(f, AI)
 
 while True:
     p = input("> ")
+    if len(p)==0:continue
     if p == r"\i":
         chat.print_log()
         continue
