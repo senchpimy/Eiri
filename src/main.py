@@ -2,7 +2,7 @@ import req
 import functions as F
 from chat import Chat
 
-AI = req.AI(mode="ollama", model="gemma3:12b")
+AI = req.AI(mode="ollama", model="deepseek-r1:1.5b")
 
 
 def addition(x: int, y: int) -> int:
