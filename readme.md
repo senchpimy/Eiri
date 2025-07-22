@@ -1,28 +1,43 @@
+# EIRI - Virtual Assistant with Python Command Execution
 
-# Virtual Assistant with Python Command Execution: EIRI
+![Badge](https://img.shields.io/badge/License-MIT-blue)
+![Badge](https://img.shields.io/badge/Ollama-Compatible-brightgreen)
+![Badge](https://img.shields.io/badge/PlatformIO-Supported-orange)
 
-This project is a virtual assistant capable of executing Python commands with enhanced functionality for handling feedback, context, and memory.
+**EIRI** es un asistente virtual diseñado para ejecutar comandos de Python con capacidades avanzadas de contexto, evaluación, coherencia y memoria. Permite la ejecución inteligente de funciones, manteniendo una conversación fluida y relevante con el usuario.
 
-## Features
+---
 
-- **Function Feedback**: The assistant provides feedback on the execution of functions. If a function executes successfully, it confirms this. In case of an error, it reports the issue along with the result.
-  
-- **Contextual Function Evaluation**: Context from previous interactions is passed to the function evaluator to improve the accuracy and relevance of function executions.
-  
-- **Request Coherence Check**: The assistant evaluates whether the user’s request is coherent before attempting to execute a function.
-  
-- **Memory Management**: The assistant maintains a memory of the last 5-7 messages related to function executions, which helps in keeping track of the ongoing tasks and context.
-  
-- **Command Evaluation**: Improves the assistant's prompt and limits attempts to avoid unexpected outputs, like returning 'I' when a true/false decision is required. 
+## 🚀 Características
 
-## Supported Models
+- **🧠 Evaluación contextual de funciones**: Utiliza el contexto de interacciones anteriores para evaluar funciones con mayor precisión.
+- **✅ Retroalimentación de ejecución**: Informa si una función se ejecutó correctamente o si hubo un error, mostrando el resultado correspondiente.
+- **🕵️‍♂️ Verificación de coherencia**: Antes de ejecutar cualquier función, valida si la solicitud del usuario es coherente.
+- **🧾 Gestión de memoria**: Mantiene un historial de las últimas 5-7 interacciones relacionadas con funciones para conservar el contexto.
+- **🧪 Evaluación de comandos**: Mejora la interpretación de órdenes evitando salidas inesperadas como respuestas ambiguas.
 
-- **Tested and Functional**:
-  - phi3
-  - llama3
+---
 
-- **Functional with Some Errors**:
-  - **mistral**: Struggles with providing accurate arguments.
-  - **wizardlm2**: Fails to evaluate if a function is needed.
-  - **dolphin-mistral**: Occasionally fails to select the correct function.
-  - **orca-mini**: Does not always evaluate when a function is needed.
+## 🤖 Modelos Compatibles
+
+### ✅ Probado y Funcional
+- **phi3**
+- **llama3**
+
+### ⚠️ Funcional con Errores
+- **mistral**: Problemas al generar argumentos adecuados.
+- **wizardlm2**: A veces no detecta cuándo se requiere una función.
+- **dolphin-mistral**: Ocasionalmente elige la función incorrecta.
+- **orca-mini**: Falla al evaluar si se debe ejecutar una función.
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la **Licencia MIT**. Consulta el archivo [LICENSE](./LICENSE) para más información.
+
+---
+
+## ✨ Créditos
+
+Desarrollado por [senchpimy](https://github.com/senchpimy)
